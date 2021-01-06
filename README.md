@@ -1,8 +1,8 @@
 # K8s Devel Scripts
 
-Setup a modified kvm2 minikube cluster.
+Setup a modified (single node) kvm2 minikube cluster.
 
 ```bash
-minikube start
+minikube start --driver=kvm2
 ./update.sh
 ```
