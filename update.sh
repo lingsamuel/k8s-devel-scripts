@@ -13,6 +13,7 @@ SSH_OPT="-o PasswordAuthentication=no -o UserKnownHostsFile=/dev/null -o StrictH
 SSH="ssh $SSH_OPT docker@$IP"
 SCP="scp $SSH_OPT"
 
+NEED_MAKE=0
 UPDATE_KUBECTL=0
 UPDATE_KUBELET=1
 UPDATE_CONTROLLER_MANAGER=0
@@ -23,18 +24,20 @@ UPDATE_APISERVER=0
 ### ==============
 pushd $K8S
 
-if [[ ! $UPDATE_KUBECTL = 0 ]]; then
-    make kubectl
-fi
-if [[ ! $UPDATE_KUBELET = 0 ]]; then
-    export KUBE_STATIC_OVERRIDES="kubelet"
-    make kubelet
-fi
-if [[ ! $UPDATE_CONTROLLER_MANAGER = 0 ]]; then
-    make kube-controller-manager
-fi
-if [[ ! $UPDATE_APISERVER = 0 ]]; then
-    make kube-apiserver
+if [[ ! $NEED_MAKE = 0 ]]; then
+    if [[ ! $UPDATE_KUBECTL = 0 ]]; then
+        make kubectl
+    fi
+    if [[ ! $UPDATE_KUBELET = 0 ]]; then
+        export KUBE_STATIC_OVERRIDES="kubelet"
+        make kubelet
+    fi
+    if [[ ! $UPDATE_CONTROLLER_MANAGER = 0 ]]; then
+        make kube-controller-manager
+    fi
+    if [[ ! $UPDATE_APISERVER = 0 ]]; then
+        make kube-apiserver
+    fi
 fi
 # make kubectl kubelet kube-controller-manager kube-apiserver
 
