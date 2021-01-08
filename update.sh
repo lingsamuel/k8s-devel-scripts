@@ -13,11 +13,30 @@ SSH_OPT="-o PasswordAuthentication=no -o UserKnownHostsFile=/dev/null -o StrictH
 SSH="ssh $SSH_OPT docker@$IP"
 SCP="scp $SSH_OPT"
 
+UPDATE_KUBECTL=0
+UPDATE_KUBELET=1
+UPDATE_CONTROLLER_MANAGER=0
+UPDATE_APISERVER=0
+
 ### ==============
 ### Build Binaries
 ### ==============
 pushd $K8S
-make kubectl kubelet kube-controller-manager kube-apiserver
+
+if [[ ! $UPDATE_KUBECTL = 0 ]]; then
+    make kubectl
+fi
+if [[ ! $UPDATE_KUBELET = 0 ]]; then
+    export KUBE_STATIC_OVERRIDES="kubelet"
+    make kubelet
+fi
+if [[ ! $UPDATE_CONTROLLER_MANAGER = 0 ]]; then
+    make kube-controller-manager
+fi
+if [[ ! $UPDATE_APISERVER = 0 ]]; then
+    make kube-apiserver
+fi
+# make kubectl kubelet kube-controller-manager kube-apiserver
 
 ### =========================
 ### Setup minikube docker-env
@@ -60,20 +79,29 @@ build_binary_image() {
     rm $SHELL_LOCATION/.dockerignore $SHELL_LOCATION/$TARGET
 }
 
-build_binary_image kube-controller-manager
-build_binary_image kube-apiserver
-
+if [[ ! $UPDATE_CONTROLLER_MANAGER = 0 ]]; then
+    build_binary_image kube-controller-manager
+fi
+if [[ ! $UPDATE_APISERVER = 0 ]]; then
+    build_binary_image kube-apiserver
+fi
 ### =================
 ### Update components
 ### =================
 $SCP $K8S/_output/bin/kubelet docker@$IP:/home/docker
 
-docker rm -f $(docker ps -a | grep k8s_kube-controller-manager | awk '{print $1}')
-docker rm -f $(docker ps -a | grep k8s_kube-apiserver | awk '{print $1}')
+if [[ ! $UPDATE_CONTROLLER_MANAGER = 0 ]]; then
+    docker rm -f $(docker ps -a | grep k8s_kube-controller-manager | awk '{print $1}')
+fi
+if [[ ! $UPDATE_APISERVER = 0 ]]; then
+    docker rm -f $(docker ps -a | grep k8s_kube-apiserver | awk '{print $1}')
+fi
 
-# Restart Kubelet after new apiserver is restarted
-$SSH sudo systemctl stop kubelet
-$SSH sudo cp /home/docker/kubelet /var/lib/minikube/binaries/$CLUSTER_VERSION/
-$SSH sudo systemctl start kubelet
+if [[ ! $UPDATE_KUBELET = 0 ]]; then
+    # Restart Kubelet after new apiserver is restarted
+    $SSH sudo systemctl stop kubelet
+    $SSH sudo cp /home/docker/kubelet /var/lib/minikube/binaries/$CLUSTER_VERSION/
+    $SSH sudo systemctl start kubelet
+fi
 
 pushd $K8S
