@@ -18,6 +18,15 @@ UPDATE_KUBECTL=${UPDATE_KUBECTL:-1}
 UPDATE_KUBELET=${UPDATE_KUBELET:-1}
 UPDATE_CONTROLLER_MANAGER=${UPDATE_CONTROLLER_MANAGER:-1}
 UPDATE_APISERVER=${UPDATE_APISERVER:-1}
+UPDATE_SCHEDULER=${UPDATE_SCHEDULER:-1}
+
+### Convenient flags, uncomment to disable components
+# NEED_MAKE=0
+# UPDATE_KUBECTL=0
+# UPDATE_KUBELET=0
+# UPDATE_CONTROLLER_MANAGER=0
+# UPDATE_APISERVER=0
+# UPDATE_SCHEDULER=0
 
 ### ==============
 ### Build Binaries
@@ -37,6 +46,9 @@ if [[ ! $NEED_MAKE = 0 ]]; then
     fi
     if [[ ! $UPDATE_APISERVER = 0 ]]; then
         make kube-apiserver
+    fi
+    if [[ ! $UPDATE_SCHEDULER = 0 ]]; then
+        make kube-scheduler
     fi
 fi
 # make kubectl kubelet kube-controller-manager kube-apiserver
@@ -88,6 +100,10 @@ fi
 if [[ ! $UPDATE_APISERVER = 0 ]]; then
     build_binary_image kube-apiserver
 fi
+if [[ ! $UPDATE_SCHEDULER = 0 ]]; then
+    build_binary_image kube-scheduler
+fi
+
 ### =================
 ### Update components
 ### =================
@@ -98,6 +114,9 @@ if [[ ! $UPDATE_CONTROLLER_MANAGER = 0 ]]; then
 fi
 if [[ ! $UPDATE_APISERVER = 0 ]]; then
     docker rm -f $(docker ps -a | grep k8s_kube-apiserver | awk '{print $1}')
+fi
+if [[ ! $UPDATE_SCHEDULER = 0 ]]; then
+    docker rm -f $(docker ps -a | grep k8s_kube-scheduler | awk '{print $1}')
 fi
 
 if [[ ! $UPDATE_KUBELET = 0 ]]; then
